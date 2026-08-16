@@ -1,0 +1,37 @@
+# Feature and Design Brief: GSM-R to FRMCS Migration
+
+## Key Functional Areas
+
+The requirements primarily focus on the initiation, management, and modification of REC-alerts within railway communication systems as part of migrating from GSM-R to FRMCS. Key functional areas include:
+
+1. **Alert Initiation**: Controllers and drivers can initiate REC-alerts, with various options for specifying the alert scope, such as addressed or initiating areas and train functional identity.
+   
+2. **Alert Management**: Controllers can select multiple areas for alerts, creating unions of these areas, and are able to amend ongoing alerts by adding or changing information.
+
+## Critical Requirements
+
+1. **Initiation Capabilities (High Priority)**: Both controllers and drivers must be able to initiate REC-alerts effectively. Controllers have extended capabilities to specify multiple addressed areas.
+
+2. **Information Modification (High Priority)**: It is essential that systems allow the modification of ongoing REC-alerts, including changing areas and adding new information, catering to dynamic operational scenarios.
+
+## Conflicts and Mismatches
+
+1. **Interoperability Concerns (REQ-033)**: Clarification is needed on potential interoperability issues when modifying information during an alert.
+
+2. **Modularity Requirement (REQ-034)**: The requirement for adding information during alerts lacks clarity on whether a modular approach is necessary.
+
+3. **Addressed Area Change (REQ-035 Conflict)**: The requirement for changing addressed areas during active alerts is conflicting. The source treats this as optional, while the current requirement presents it as mandatory. Resolution is needed to align with operational priorities.
+
+## Stakeholder Owners and Responsibilities
+
+1. **Railway Operators**: Ensure all staff are trained to initiate and manage REC-alerts effectively.
+   
+2. **System Developers**: Implement systems that meet the defined requirements, particularly focusing on dynamic alert management capabilities.
+
+3. **Safety and Compliance Teams**: Review interoperability and modularity issues, ensuring that changes in alert information comply with safety regulations.
+
+4. **Project Management**: Coordinate between stakeholders to resolve any conflicts and ensure timely and efficient handling of all requirements.
+
+## Recommended Next Steps
+
+To move forward effectively, resolve conflicts and open questions by conducting a stakeholder workshop. This will ensure alignment and clarity, especially regarding interoperability and modularity concerns. Following this, collaborate with development teams to prioritize high-criticality requirements, ensuring that the system design enhances alert management efficacy in the FRMCS framework.

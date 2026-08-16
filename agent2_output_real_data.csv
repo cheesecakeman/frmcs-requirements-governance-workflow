@@ -1,0 +1,11 @@
+﻿id,clarifiedText,comparisonNote,mismatchFlag,stricterSource,openQuestion,reviewStatus
+REQ-011,A controller SHALL be able to initiate a REC-alert.,Matches with the source passage in the spec.,no,equal,,ok
+REQ-012,A driver SHALL be able to initiate a REC-alert.,Matches with the source passage in the spec.,no,equal,,ok
+REQ-013,A controller SHALL be able to initiate a REC-alert by selecting one addressed area.,Matches with the source passage in the spec.,no,equal,,ok
+REQ-014,A controller SHALL be able to initiate a REC-alert by selecting several addressed areas.,Matches with the source passage in the spec.,no,equal,,ok
+REQ-015,"When a controller initiates a REC-alert by selecting several addressed areas, the resulting addressed area SHALL be the union of the selected addressed areas.",Matches with the source passage in the spec.,no,equal,,ok
+REQ-016,A controller SHALL be able to initiate a REC-alert by selecting one initiating area.,Matches with the source passage in the spec.,no,equal,,ok
+REQ-017,A controller SHALL be able to initiate a REC-alert by providing a specific train functional identity.,Matches with the source passage in the spec.,no,equal,,ok
+REQ-033,The system SHALL allow changing additional information during an ongoing REC-alert that is permanently presented to the recipients.,Matches with source but lacks specific interoperability context.,no,equal,Are there interoperability concerns for changing information during alerts?,needs review
+REQ-034,The system SHALL allow adding additional information during an ongoing REC-alert if no additional information was inserted at setup.,Matches with source but lacks specific modularity context.,no,equal,Is there a modularity requirement for adding information during alerts?,needs review
+REQ-035,The system SHALL allow a controller to change the addressed area(s) during an ongoing REC-alert.,Contradicts spec as it is optional in source.,yes,input,Should changing addressed areas be mandatory?,conflict

@@ -1,0 +1,39 @@
+# FRMCS Migration Design Brief
+
+## Summary of Key Functional Areas
+
+The migration from GSM-R to FRMCS encompasses critical functionalities aimed at enhancing communication reliability, user familiarity, operational transparency, and system resilience. Key areas include seamless voice communication, emergency and group communication functions, continuous coverage in challenging environments, prioritization of critical communication traffic, automatic failover mechanisms, remote software updates, comprehensive logging for incident analysis, and usability improvements for operators and maintenance personnel.
+
+## Critical Requirements
+
+1. **Seamless Voice Communication**: The system must maintain active voice calls across coverage areas without manual redialing by the driver (REQ-001). This is essential for uninterrupted communication.
+
+2. **Dispatcher Reachability**: Dispatchers must be able to contact drivers even if the train unit is recently restarted (REQ-002).
+
+3. **Familiar User Interface**: Equipment should operate in a way familiar to drivers transitioning from GSM-R, especially for emergency and group communications (REQ-003).
+
+4. **Extended Coverage Support**: The system should perform better in tunnels and difficult coverage areas with fewer dropped sessions (REQ-004).
+
+5. **Traffic Prioritization**: Clear prioritization must ensure emergency and operational communications take precedence over non-critical data (REQ-005).
+
+6. **Automatic Backup Connection**: The radio should automatically switch to a backup network path if the primary fails (REQ-006).
+
+## Conflicts and Mismatches
+
+1. **Logging Specifications**: The requirement for detailed incident logs (REQ-009) needs alignment with the specification which includes a specific 90-day log requirement. Resolution is required to define log duration and detail level.
+
+2. **User Experience Requirements**: Elements such as simpler fault views (REQ-010) and intelligent alarm filtering (REQ-012) are noted for review as they involve user interface enhancements not explicitly covered by the specification.
+
+## Stakeholder Owners and Responsibilities
+
+1. **Standards Body**: Oversees compliance with ETSI specifications, ensuring alignment of requirements with industry standards.
+
+2. **Rail Operators**: Responsible for operational input, ensuring that communication reliability and user interface design meet practical needs.
+
+3. **Engineering Teams**: Tasked with technical design, implementation, and testing to deliver the specified functionalities.
+
+4. **Maintenance Teams**: Ensure systems are maintainable and faults are easily diagnosable with improved interfaces.
+
+## Recommended Next Steps
+
+To ensure smooth progression, it's essential to address any conflicts, particularly around logging specifications. Engage stakeholders in collaborative workshops to refine user experience elements and resolve review-needing requirements. Prioritize the design and prototyping of critical communication functionalities, ensuring compliance with standards while incorporating user feedback to enhance usability and operational effectiveness.
