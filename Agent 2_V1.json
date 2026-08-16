@@ -1,0 +1,347 @@
+{
+  "name": "Agent 2_V1",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -208
+      ],
+      "id": "0c0148df-9599-43a7-9b3b-b96e05b20f15",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "5a6cf71d-6941-4545-8a11-07dcd6e982b6",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\nlet requirements = [];\nlet specText = '';\n\nfor (const item of allItems) {\n  const keys = Object.keys(item.json);\n  \n  if ('sourceDoc' in item.json) {\n    const idKey = keys.find(k => k.replace(/^\\uFEFF/, '') === 'id');\n    const id = idKey ? item.json[idKey] : null;\n    if (id) {\n      requirements.push({\n        id: id,\n        text: item.json.text || '',\n        sourcePassage: item.json.sourcePassage || '',\n        sourceDoc: item.json.sourceDoc || '',\n        sourceSection: item.json.sourceSection || '',\n        sourceRef: item.json.sourceRef || null,\n        stakeholderType: item.json.stakeholderType || '',\n        abstractionLevel: item.json.abstractionLevel || '',\n        ambiguityFlag: item.json.ambiguityFlag || 'no'\n      });\n    }\n  } else if (item.json.text) {\n    specText += ' ' + item.json.text;\n  }\n}\n\n// Filter to requirements with explicit 10.11 sourceRef\nconst withRef = requirements.filter(r =>\n  r.sourceRef && String(r.sourceRef).includes('10.11')\n);\nconst filtered = withRef.length >= 10\n  ? withRef.slice(0, 10)\n  : requirements.slice(0, 10);\n\n// Skip preamble and take substantive content\nconst markers = ['5 SYSTEM ARCHITECTURE', '4 INTRODUCTION', '7.1.2', '45 / 202'];\nlet start = 0;\nfor (const m of markers) {\n  const idx = specText.indexOf(m);\n  if (idx > 0) { start = idx; break; }\n}\nconst trimmedSpec = specText.slice(start, start + 12000);\n\nconst prompt = `You are a requirements comparison and clarification agent for railway engineering documents (GSM-R to FRMCS migration context).\n\nFor each requirement below, return a JSON object with exactly these 7 fields:\n- \"id\": the original id unchanged\n- \"clarifiedText\": clarified version or original if already clear\n- \"comparisonNote\": one sentence on how this requirement relates to the reference spec\n- \"mismatchFlag\": \"yes\" if conflict or inconsistency, else \"no\"\n- \"stricterSource\": \"input\", \"spec\", \"equal\", or \"n/a\"\n- \"openQuestion\": one unresolved question needing human judgment, or null\n- \"reviewStatus\": \"ok\", \"needs review\", or \"conflict\"\n\nReturn ONLY a JSON array. Start with [ and end with ]\nNo explanation, no markdown fences.\n\nRequirements:\n${JSON.stringify(filtered)}\n\nReference specification:\n${trimmedSpec}`;\n\nreturn [{\n  json: {\n    requirements: JSON.stringify(filtered),\n    specText: trimmedSpec,\n    prompt: prompt\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        -16
+      ],
+      "id": "6081940a-a1e2-45d6-9981-2290242087be",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ $json.prompt }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 8000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1312,
+        -16
+      ],
+      "id": "398d653b-4723-4cc3-95ce-499b2b76b457",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Nn21nrfYx6Pu0ixy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const first = $input.first().json;\nconst text = first?.output?.[0]?.content?.[0]?.text || '';\nconst content = text.replace(/```json|```/g, '').trim();\n\nlet reqArray = [];\ntry {\n  const parsed = JSON.parse(content);\n  reqArray = Array.isArray(parsed) ? parsed : [parsed];\n} catch(e) {\n  return [{ json: { error: e.message, raw: content.slice(0, 300) } }];\n}\n\nreturn reqArray.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        -16
+      ],
+      "id": "8b284d90-e3d8-424e-9914-1b19089d7097",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "agent2_refined.csv"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1872,
+        -16
+      ],
+      "id": "776a9cb1-ac40-440a-9a36-d79390346c90",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        -208
+      ],
+      "id": "8b3953b2-995d-4c57-b69f-2aba1f504dd4",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1JTyU1PgRpeFXf1CU7XVqDC2hf0ZJB8jG",
+          "mode": "list",
+          "cachedResultName": "uic_frmcs_srs_at-7800_v2.1_0-45-70.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/1JTyU1PgRpeFXf1CU7XVqDC2hf0ZJB8jG/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        208,
+        -208
+      ],
+      "id": "a348d099-a078-4b3d-b3bf-bc3f96612b91",
+      "name": "Download Reference",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NR7niFO6REFxe7pY",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1EzroyNnZiTKGMSyhj6IyHo5CPwaVftQ9",
+          "mode": "list",
+          "cachedResultName": "Output_agent1",
+          "cachedResultUrl": "https://drive.google.com/file/d/1EzroyNnZiTKGMSyhj6IyHo5CPwaVftQ9/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "83299248-a97a-4e0d-8d21-643209b5cd4a",
+      "name": "Download Output Agent 1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NR7niFO6REFxe7pY",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        864,
+        -16
+      ],
+      "id": "4a77d7fd-e28c-466a-88ac-f51bc2980610",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "name": "agent2_clarified",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1PselezOHceYzcJOUPlEn9euxA8c-WPBN",
+          "mode": "list",
+          "cachedResultName": "Master Thesis",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1PselezOHceYzcJOUPlEn9euxA8c-WPBN"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2080,
+        -16
+      ],
+      "id": "3af88cea-1ede-4c44-9e70-d4a70e6b6046",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NR7niFO6REFxe7pY",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Download Reference",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Download Output Agent 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Reference": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Output Agent 1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b5afcab4-b68d-407b-951e-bd71309d407f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7a76810c1745f4f624bc6bdf0dd64debac14c68b1de701080d6f308fc2b313c9"
+  },
+  "nodeGroups": [],
+  "id": "RiV9S4NyreMRpiqQ",
+  "tags": []
+}

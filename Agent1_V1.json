@@ -1,0 +1,396 @@
+{
+  "name": "Agent1_V1",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -160
+      ],
+      "id": "89deeebc-4c5f-46a2-8bec-ec43c61cb25f",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a237a39c-b210-4b33-9d2f-5928af2fe8b6",
+              "name": "documentName",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "ca27f722-f3f2-4a85-bade-fdb382e19b50",
+              "name": "stakeholderType",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "64c5c714-0341-4685-80e2-e540ff6558f1",
+              "name": "documentSection",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        -160
+      ],
+      "id": "1c1ed8d6-47c3-4023-bcbc-9b95218bb30b",
+      "name": "Set Document Metadata"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1W72gnj_4HM3cFmAm4SGlsWiiRxtxFMDq",
+          "mode": "list",
+          "cachedResultName": "uic_frmcs_frs_fu-7120_v2.1_0 (1)-145-152.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/1W72gnj_4HM3cFmAm4SGlsWiiRxtxFMDq/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        560,
+        -160
+      ],
+      "id": "3e96c3df-8534-4cbb-8245-e2dba7926887",
+      "name": "Download Source PDF",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NR7niFO6REFxe7pY",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        -160
+      ],
+      "id": "7514c851-94c4-4132-93a5-24ebfc6aaa3c",
+      "name": "Extract PDF Text"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.text || '';\nconst documentName = 'FRMCS Functional Requirements Specification (FU-7120)';\nconst stakeholderType = 'Standards body';\nconst documentSection = 'Section 10.11 - Railway Emergency Communication';\n\n// Character-based chunking with overlap\n// Fallback works for any document format including 10.11.x.x numbering\nconst chunkSize = 3000;\nconst overlap = 200;\nconst chunks = [];\n\nfor (let i = 0; i < text.length; i += chunkSize - overlap) {\n  const chunk = text.slice(i, i + chunkSize);\n  if (chunk.trim().length > 0) {\n    chunks.push(chunk.trim());\n  }\n}\n\nreturn chunks.map((chunk, i) => ({\n  json: {\n    chunkIndex: i,\n    totalChunks: chunks.length,\n    text: chunk,\n    documentName,\n    stakeholderType,\n    documentSection\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        -160
+      ],
+      "id": "dc287923-8de8-494f-9b35-b1f69f7b46bd",
+      "name": "Chunk Text"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are a requirements intake and grounding agent for railway \nengineering documents (GSM-R to FRMCS migration context).\n\nThe input document has the following metadata:\n- Document name: {{ $json.documentName }}\n- Stakeholder type: {{ $json.stakeholderType }}\n- Section: {{ $json.documentSection }}\n- Chunk index: {{ $json.chunkIndex }}\n\nYour tasks:\n1. Identify every requirement-relevant statement in the text \n   below. A requirement is any sentence that expresses a need, obligation, \nrequest, or system behaviour — including sentences using SHALL, \nMUST, SHOULD, WILL, \"is required to\", \"we need\", \"please\", \n\"there should be\", \"support for\", or any statement describing \nwhat a system should do. Be inclusive rather than exclusive — \nif in doubt, extract it.\n\n2. For each requirement found, return a JSON object with \n   exactly these fields:\n   - \"id\": use format \"REQ-{{ $json.chunkIndex }}-001\", \n     \"REQ-{{ $json.chunkIndex }}-002\" etc. to avoid \n     duplicate IDs across chunks\n   - \"text\": the requirement rewritten in standard SHALL format\n   - \"sourcePassage\": the original sentence exactly as written\n   - \"sourceDoc\": the document name provided above\n   - \"sourceSection\": the section heading this came from\n   - \"sourceRef\": any existing reference number in the document \n     (e.g. R01, 5.1.2), or null\n   - \"stakeholderType\": the stakeholder type provided above\n   - \"abstractionLevel\": \"high\" if a general system goal, \n     \"mid\" if system-level behaviour, \"low\" if design-ready \n     and measurable\n   - \"ambiguityFlag\": \"yes\" if vague, incomplete, or unclear, \n     otherwise \"no\"\n\n3. Only extract requirements from the text provided below. \n   Do not invent requirements or reference other sections.\n   If this chunk contains no requirements, return [].\n\n4. Return ONLY a JSON array. Start with [ and end with ]\n   No explanation, no markdown fences.\n\nText to process:\n{{ $json.text }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 4000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        -160
+      ],
+      "id": "d6bfa13f-6482-48f9-b4c9-897c0bd6b0c9",
+      "name": "Extract Requirements",
+      "credentials": {
+        "openAiApi": {
+          "id": "Nn21nrfYx6Pu0ixy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst allRequirements = [];\n\nfor (const item of items) {\n  // Extract the text from the GPT-4o response\n  const text = item.json?.output?.[0]?.content?.[0]?.text || '';\n  const content = text.replace(/```json|```/g, '').trim();\n  \n  // Skip empty responses\n  if (!content || content === '[]') continue;\n  \n  try {\n    const parsed = JSON.parse(content);\n    if (Array.isArray(parsed)) {\n      allRequirements.push(...parsed);\n    }\n  } catch(e) {\n    // Skip malformed chunks silently\n  }\n}\n\nreturn allRequirements.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        -160
+      ],
+      "id": "1d1b0efd-a65d-4590-a494-693af9bf1e10",
+      "name": "Parse Extracted Requirements",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// Filter out any error items and items without valid id or text\nconst validItems = items.filter(item => \n  item.json.id && \n  item.json.text && \n  !item.json.error\n);\n\n// Renumber IDs sequentially as REQ-001, REQ-002 etc.\nconst reqs = validItems.map((item, index) => ({\n  id: `REQ-${String(index + 1).padStart(3, '0')}`,\n  text: item.json.text || '',\n  sourcePassage: item.json.sourcePassage || '',\n  sourceDoc: item.json.sourceDoc || '',\n  sourceSection: item.json.sourceSection || '',\n  sourceRef: item.json.sourceRef || null,\n  stakeholderType: item.json.stakeholderType || '',\n  abstractionLevel: item.json.abstractionLevel || '',\n  ambiguityFlag: item.json.ambiguityFlag || 'no'\n}));\n\nreturn [{ json: { allRequirements: JSON.stringify(reqs) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        -160
+      ],
+      "id": "7d53d651-2abc-402d-9e57-358156145dd4",
+      "name": "Bundle for Normaliser"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are a requirements normaliser for railway engineering documents.\n\nGiven the JSON array below, rewrite ONLY the \"text\" field of each requirement into standard SHALL format.\n\nRules:\n- Replace MUST, SHOULD, WILL, \"is required to\" with SHALL\n- Keep the meaning exactly the same\n- Remove exact duplicate requirements — keep only one\n- Preserve ALL other fields exactly as they are — do not change id, sourcePassage, sourceDoc, sourceSection, sourceRef, stakeholderType, abstractionLevel, or ambiguityFlag\n- Return ONLY the JSON array. Start with [ and end with ]\n- No explanation, no markdown fences\n\nRequirements to normalise:\n{{ $json.allRequirements }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        2016,
+        -160
+      ],
+      "id": "1ad40722-3685-4218-adf3-bef9c213aa4a",
+      "name": "Normalise Requirements",
+      "credentials": {
+        "openAiApi": {
+          "id": "Nn21nrfYx6Pu0ixy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const first = $input.first().json;\nconst text = first?.output?.[0]?.content?.[0]?.text || '';\nconst content = text.replace(/```json|```/g, '').trim();\n\nlet reqArray = [];\ntry {\n  const parsed = JSON.parse(content);\n  reqArray = Array.isArray(parsed) ? parsed : [parsed];\n} catch(e) {\n  return [{ json: { error: e.message, raw: content.slice(0, 300) } }];\n}\n\nreturn reqArray.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        -160
+      ],
+      "id": "0e6d7a59-cffc-4caf-884b-6fa89332c607",
+      "name": "Parse Normalised Requirements"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2608,
+        -160
+      ],
+      "id": "796f0e67-ca53-4b23-a1b4-acd18db2e92b",
+      "name": "Convert to CSV"
+    },
+    {
+      "parameters": {
+        "name": "Output_agent1",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1PselezOHceYzcJOUPlEn9euxA8c-WPBN",
+          "mode": "list",
+          "cachedResultName": "Master Thesis",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1PselezOHceYzcJOUPlEn9euxA8c-WPBN"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2832,
+        -160
+      ],
+      "id": "1e829a55-455f-4d19-b80b-5e32e7ae7485",
+      "name": "Upload CSV to Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NR7niFO6REFxe7pY",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Document Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Document Metadata": {
+      "main": [
+        [
+          {
+            "node": "Download Source PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Source PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Chunk Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk Text": {
+      "main": [
+        [
+          {
+            "node": "Extract Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Requirements": {
+      "main": [
+        [
+          {
+            "node": "Parse Extracted Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Extracted Requirements": {
+      "main": [
+        [
+          {
+            "node": "Bundle for Normaliser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bundle for Normaliser": {
+      "main": [
+        [
+          {
+            "node": "Normalise Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise Requirements": {
+      "main": [
+        [
+          {
+            "node": "Parse Normalised Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Normalised Requirements": {
+      "main": [
+        [
+          {
+            "node": "Convert to CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to CSV": {
+      "main": [
+        [
+          {
+            "node": "Upload CSV to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6416d5de-7b7b-4a37-99f8-ae643d4fc804",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7a76810c1745f4f624bc6bdf0dd64debac14c68b1de701080d6f308fc2b313c9"
+  },
+  "nodeGroups": [],
+  "id": "llRJV6dW7KXcZjcV",
+  "tags": []
+}

@@ -1,0 +1,371 @@
+{
+  "name": "Agent3_V1",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "317f4284-9d7f-470e-8400-d43ce491d60c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1qxFbPL8xCr7sMppsZyVHRYzyG_KbMovm",
+          "mode": "list",
+          "cachedResultName": "agent2_clarified_1",
+          "cachedResultUrl": "https://drive.google.com/file/d/1qxFbPL8xCr7sMppsZyVHRYzyG_KbMovm/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6ed2fab4-f779-4a50-b154-744c9a9bb3b4",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NR7niFO6REFxe7pY",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "27bf0800-8c9d-480d-81bc-7706160a5643",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst reqs = items.map(item => {\n  const clean = {};\n  Object.keys(item.json).forEach(k => {\n    clean[k.replace(/^\\uFEFF/, '').trim()] = typeof item.json[k] === 'string' ? item.json[k].trim() : item.json[k];\n  });\n  return {\n    id: clean.id || '',\n    text: clean.text || '',\n    sourceDoc: clean.sourceDoc || '',\n    sourceSection: clean.sourceSection || '',\n    sourceRef: clean.sourceRef || null,\n    stakeholderType: clean.stakeholderType || '',\n    abstractionLevel: clean.abstractionLevel || '',\n    ambiguityFlag: clean.ambiguityFlag || 'no',\n    clarifiedText: clean.clarifiedText || '',\n    comparisonNote: clean.comparisonNote || '',\n    mismatchFlag: clean.mismatchFlag || 'no',\n    stricterSource: clean.stricterSource || 'n/a',\n    openQuestion: clean.openQuestion || null,\n    reviewStatus: clean.reviewStatus || 'ok'\n  };\n});\n\nreturn [{ json: { allRequirements: JSON.stringify(reqs) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "6f65d1af-56d8-4cab-b814-ba328b2b0e18",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are an actionable output agent for railway engineering requirements (GSM-R to FRMCS migration context).\n\nGiven the requirements below, for each one assign:\n\n1. \"owner\": the responsible stakeholder:\n   - ERA: regulatory and interoperability requirements\n   - Infrastructure Manager: trackside equipment and coverage\n   - Train Operator: onboard equipment and driver-facing functionality\n   - Vendor: implementation, technical compliance, and software\n\n2. \"evidenceType\": type of evidence needed to verify it:\n   - Test report\n   - Design document\n   - Standard reference\n   - Inspection record\n   - Simulation result\n   - Certification document\n\n3. \"ownerConfidence\": high, medium, or low\n\n4. \"priority\": high, medium, or low — based on safety criticality and reviewStatus\n\n5. \"actionNote\": one sentence describing the next concrete action needed\n\nReturn a JSON array where each object contains ALL original fields plus: owner, evidenceType, ownerConfidence, priority, actionNote.\nReturn ONLY the JSON array. Start with [ and end with ]\nNo explanation, no markdown fences.\n\nRequirements:\n{{ $json.allRequirements }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 4000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        0
+      ],
+      "id": "3e5274b5-5740-4d0f-8b74-b1445a7acbad",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Nn21nrfYx6Pu0ixy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const first = $input.first().json;\nconst text = first?.output?.[0]?.content?.[0]?.text || '';\nconst content = text.replace(/```json|```/g, '').trim();\n\nlet reqArray = [];\ntry {\n  const parsed = JSON.parse(content);\n  reqArray = Array.isArray(parsed) ? parsed : [parsed];\n} catch(e) {\n  return [{ json: { error: e.message, raw: content.slice(0, 300) } }];\n}\n\nreturn reqArray.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "5886f2fc-d5cd-4f9d-8bf8-f6b3f6a5047f",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1392,
+        0
+      ],
+      "id": "9fb36afe-b738-4c4c-b5e0-5176f1c34786",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "name": "agent3_requirement_table.csv",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1PselezOHceYzcJOUPlEn9euxA8c-WPBN",
+          "mode": "list",
+          "cachedResultName": "Master Thesis",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1PselezOHceYzcJOUPlEn9euxA8c-WPBN"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1600,
+        0
+      ],
+      "id": "8eef8d46-8a1b-4a65-b9bb-35d96ac64360",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NR7niFO6REFxe7pY",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are a design brief writer for railway engineering projects (GSM-R to FRMCS migration context).\n\nGiven the structured requirements below, write a concise feature and design brief that:\n\n1. Summarises the key functional areas covered by the requirements\n2. Highlights the most critical requirements (priority = high)\n3. Flags any conflicts or mismatches that need resolution before design can proceed\n4. Lists the main stakeholder owners and their responsibilities\n5. Ends with a short paragraph on recommended next steps\n\nWrite in clear professional prose. Use headings. Do not return JSON.\n\nRequirements:\n{{ $json.allRequirements }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 2000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        208
+      ],
+      "id": "fdb2b962-c4de-4ca0-970b-03c0f4c5d9fd",
+      "name": "Design brief",
+      "credentials": {
+        "openAiApi": {
+          "id": "Nn21nrfYx6Pu0ixy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const first = $input.first().json;\n\n// Handle both response formats\nconst text = first?.output?.[0]?.content?.[0]?.text || \n             first?.choices?.[0]?.message?.content || '';\n\nreturn [{ json: { briefText: text } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        208
+      ],
+      "id": "a2a37fdf-6634-4392-b0bb-52cfb37dc4b5",
+      "name": "Brief parser"
+    },
+    {
+      "parameters": {
+        "operation": "createFromText",
+        "content": "={{ $json.briefText }}",
+        "name": "agent3_design_brief.txt",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1PselezOHceYzcJOUPlEn9euxA8c-WPBN",
+          "mode": "list",
+          "cachedResultName": "Master Thesis",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1PselezOHceYzcJOUPlEn9euxA8c-WPBN"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1392,
+        208
+      ],
+      "id": "a65f7290-bd2b-4d20-9f6a-31abdf2661a5",
+      "name": "Create file from text",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NR7niFO6REFxe7pY",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Design brief",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        []
+      ]
+    },
+    "Design brief": {
+      "main": [
+        [
+          {
+            "node": "Brief parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief parser": {
+      "main": [
+        [
+          {
+            "node": "Create file from text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "58741e6c-fa59-445f-8c5f-6f5ca45ba5cc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7a76810c1745f4f624bc6bdf0dd64debac14c68b1de701080d6f308fc2b313c9"
+  },
+  "nodeGroups": [],
+  "id": "Soa0zxLgdu0UBeOp",
+  "tags": []
+}
