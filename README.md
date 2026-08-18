@@ -9,7 +9,7 @@ Kristi Kapllani
 
 Thesis Context
 This deliverable accompanies the master thesis
-“Workflow-Level Automation for Requirements Governance Across Levels: Evidence from GSM-R to FRMCS Migration”.
+“Automation of Requirement Governance in Railway Communication Systems: AI-assisted Workﬂow for System Migration from GSM-R to FRMCS”.
 
 It contains the bounded n8n prototype used to demonstrate and evaluate a staged workflow for requirements governance across heterogeneous sources and levels of abstraction in the GSM-R to FRMCS migration context.
 
